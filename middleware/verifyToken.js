@@ -14,7 +14,7 @@ const verifyToken = async (req, res, next) => {
 
   try {
     // Verify the token and decode the payload
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.SECRET_KEY);
 
     // Check if contact in token matches the one in request body (or query)
     // Normalize contact from token and request to lowercase
