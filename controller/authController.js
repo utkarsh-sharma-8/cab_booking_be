@@ -15,10 +15,10 @@ const auth=async(req,res)=>{
         console.log(user);
         const token = generateToken(phone);
         if(user){
-            res.status(200).json({messsage:"Success",user,token});
+            res.status(200).json({message:"Success",message2:"UserLogin",user,token});
         }else{
             const result=await userModel.create({phone,name,passengerId:uuidv4()});
-            res.status(201).json({message:"User Created Successfully",result,token})
+            res.status(201).json({message:"Success",result,token})
         }
     }catch(error){
         console.log(`Error is ${error}`);

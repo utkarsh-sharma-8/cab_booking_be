@@ -30,7 +30,42 @@ const setupWebSocket = (io) => {
             // Notify all connected clients about location update
             io.emit("driver_location", { phone, latitude, longitude });
         });
+        socket.on("requestRide", async (data) => {
+            const { passengerId, latitude, longitude } = data;
 
+            // Find the nearest available driver (MongoDB Geospatial Query)
+            const nearestDriver = await driverModel.findOne({
+                isAvailable: true,
+                location: {
+                    $near: {
+                        $geometry: { type: "Point", coordinates: [longitude, latitude] },
+                        $maxDistance: 5000 // 5km radius
+                    }
+                }
+            });
+
+            if (!nearestDriver) {
+                return socket.emit("noDriversAvailable", { message: "❌ No drivers nearby. Try again later." });
+            }
+
+            // Notify the driver about the ride request
+            const driverSocketId = connectedDrivers[nearestDriver.phone];
+            if (driverSocketId) {
+                io.to(driverSocketId).emit("rideRequest", {
+                    passengerId,
+                    passengerSocketId: socket.id,
+                    pickupLocation: { latitude, longitude },
+                    message: "🚖 New Ride Request!"
+                });
+
+                // Store ride request
+                activeRides[passengerId] = nearestDriver.phone;
+
+                console.log(`📢 Ride request sent to Driver ${nearestDriver.phone} for Passenger ${passengerId}`);
+            } else {
+                socket.emit("noDriversAvailable", { message: "❌ Driver found but not online." });
+            }
+        });
         // Driver Accepts Ride
         socket.on("acceptRide", async (data) => {
             const { driverId, passengerId } = data;
@@ -46,7 +81,7 @@ const setupWebSocket = (io) => {
             if(passengerSocketId){
                 io.to(passengerSocketId).emit("rideAccepted",{
                     driverId,
-                    driverScocketId,
+                    driverSocketId,
                     message:"Your Ride Has Been Accepted"
                 })
             }

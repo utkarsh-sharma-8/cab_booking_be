@@ -11,12 +11,14 @@ const getAllCabs=async(req,res)=>{
             location:{
                 $near: {
                     $geometry:{type: "Point",coordinates:[longitude,latitude]},
-                    $maxDistance:3000,
+                    $maxDistance:3000000,
                     $minDistance:0,
                 }
             },isAvailable:true,
         });
-
+        if(nearByDrivers.length===-0){
+            return res.status(404).json({success:false,message:"No drivers there"})
+        }
         res.status(200).json({success:true,data:nearByDrivers});
     }catch(error){
         res.status(500).json({success:false,error:error.message});

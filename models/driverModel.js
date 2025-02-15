@@ -4,10 +4,10 @@ const driverSchema=new mongoose.Schema({
     phone: {type:String,required:true,unique:true},
     name:{type:String,required:true},
     car_no:{type:String,required:true},
-    isAvailable:{type:String},
+    isAvailable:{type:Boolean},
     location: {
         type: { type: String, default: "Point",required:true },
-        coordinates: { type: [Number], default: [0, 0] ,required:true} // [longitude, latitude]
+        coordinates: { type: [Number] ,required:true} // [longitude, latitude]
     }
 },{timestamps:true})
 driverSchema.index({ location: "2dsphere" }); // Add geospatial index
