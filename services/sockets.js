@@ -30,38 +30,88 @@ const setupWebSocket = (io) => {
             // Notify all connected clients about location update
             io.emit("driver_location", { phone, latitude, longitude });
         });
-        socket.on("requestRide", async (data) => {
-            const { passengerId, latitude, longitude } = data;
+        // socket.on("requestRide", async (data) => {
+        //     const { passengerId, latitude, longitude } = data;
 
-            // Find the nearest available driver (MongoDB Geospatial Query)
+        //     // Find the nearest available driver (MongoDB Geospatial Query)
+        //     const nearestDriver = await driverModel.findOne({
+        //         isAvailable: true,
+        //         location: {
+        //             $near: {
+        //                 $geometry: { type: "Point", coordinates: [longitude, latitude] },
+        //                 $maxDistance: 5000 // 5km radius
+        //             }
+        //         }
+        //     });
+
+        //     if (!nearestDriver) {
+        //         return socket.emit("noDriversAvailable", { message: "❌ No drivers nearby. Try again later." });
+        //     }
+
+        //     // Notify the driver about the ride request
+        //     const driverSocketId = connectedDrivers[nearestDriver.phone];
+        //     if (driverSocketId) {
+        //         io.to(driverSocketId).emit("rideRequest", {
+        //             passengerId,
+        //             passengerSocketId: socket.id,
+        //             pickupLocation: { latitude, longitude },
+        //             message: "🚖 New Ride Request!"
+        //         });
+
+        //         // Store ride request
+        //         activeRides[passengerId] = nearestDriver.phone;
+
+        //         console.log(`📢 Ride request sent to Driver ${nearestDriver.phone} for Passenger ${passengerId}`);
+        //     } else {
+        //         socket.emit("noDriversAvailable", { message: "❌ Driver found but not online." });
+        //     }
+        // });
+        socket.on("requestRide", async (data) => {
+            const { passengerId, source, destination } = data;
+        
+            // Validate input
+            if (!source || !source.latitude || !source.longitude || isNaN(source.latitude) || isNaN(source.longitude)) {
+                console.log("❌ Invalid ride request: Missing source coordinates.");
+                return socket.emit("invalidLocation", { message: "❌ Invalid pickup location." });
+            }
+        
+            if (!destination || !destination.latitude || !destination.longitude || isNaN(destination.latitude) || isNaN(destination.longitude)) {
+                console.log("❌ Invalid ride request: Missing destination coordinates.");
+                return socket.emit("invalidLocation", { message: "❌ Invalid destination location." });
+            }
+        
+            console.log(`🔍 Searching for drivers near pickup: ${source.latitude}, ${source.longitude}`);
+        
+            // Find the nearest available driver
             const nearestDriver = await driverModel.findOne({
                 isAvailable: true,
                 location: {
                     $near: {
-                        $geometry: { type: "Point", coordinates: [longitude, latitude] },
+                        $geometry: { type: "Point", coordinates: [source.longitude, source.latitude] },
                         $maxDistance: 5000 // 5km radius
                     }
                 }
             });
-
+        
             if (!nearestDriver) {
                 return socket.emit("noDriversAvailable", { message: "❌ No drivers nearby. Try again later." });
             }
-
-            // Notify the driver about the ride request
+        
+            console.log(`📢 Ride request sent to Driver ${nearestDriver.phone} for Passenger ${passengerId}`);
+        
+            // Notify driver
             const driverSocketId = connectedDrivers[nearestDriver.phone];
             if (driverSocketId) {
                 io.to(driverSocketId).emit("rideRequest", {
                     passengerId,
                     passengerSocketId: socket.id,
-                    pickupLocation: { latitude, longitude },
+                    pickupLocation: source, // Send full source object
+                    destinationLocation: destination, // Send full destination object
                     message: "🚖 New Ride Request!"
                 });
-
+        
                 // Store ride request
                 activeRides[passengerId] = nearestDriver.phone;
-
-                console.log(`📢 Ride request sent to Driver ${nearestDriver.phone} for Passenger ${passengerId}`);
             } else {
                 socket.emit("noDriversAvailable", { message: "❌ Driver found but not online." });
             }

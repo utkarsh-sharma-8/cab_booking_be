@@ -5,10 +5,10 @@ const driverSchema=new mongoose.Schema({
     name:{type:String,required:true},
     car_no:{type:String,required:true},
     isAvailable:{type:Boolean},
-    location: {
-        type: { type: String, default: "Point",required:true },
-        coordinates: { type: [Number] ,required:true} // [longitude, latitude]
-    }
+    // location: {
+    //     type: { type: String, default: "Point"},
+    //     coordinates: { type: [Number]} // [longitude, latitude]
+    // }
 },{timestamps:true})
-driverSchema.index({ location: "2dsphere" }); // Add geospatial index
+// driverSchema.index({ location: "2dsphere" }); // Add geospatial index
 module.exports =mongoose.model("Driver",driverSchema);
