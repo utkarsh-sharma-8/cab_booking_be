@@ -294,7 +294,7 @@ const setupWebSocket = (io) => {
                     passengerId,
                     pickupLocation: source,
                     destinationLocation: destination,
-                    message: "🚖 New Ride Request!"
+                    message: "New Ride Request!"
                 });
         
                 // Store ride request
